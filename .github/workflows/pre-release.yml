@@ -1,0 +1,57 @@
+name: Pre-release
+
+on:
+  schedule:
+    - cron: '0 2 * * *' # run at 2 AM UTC
+
+  workflow_dispatch:
+  
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          repository: 'project-serum/anchor'
+          ref: 'master'
+      - uses: ./.github/actions/setup/
+      - uses: actions/setup-node@v2
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: actions/cache@v2
+        name: Cache Cargo registry + index
+        id: cache-cargo-build
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            ./target/
+          key: cargo-${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+
+      # cli
+      - run: make build-cli
+      - run: cd cli/npm-package && yarn pack
+      - run: cp cli/npm-package/project-serum-anchor-cli-*.tgz ./anchor-cli.tgz
+      - uses: "marvinpinto/action-automatic-releases@latest"
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          prerelease: true
+          title: "anchor-cli"
+          automatic_release_tag: 'anchor-cli-nightly'
+          files: |
+            ./anchor-cli.tgz
+
+      # ts
+      - uses: ./.github/actions/setup-ts/
+      - run: cd ts && yarn build && yarn pack
+      - run: cp ts/project-serum-anchor-*.tgz ./anchor.tgz
+      - uses: "marvinpinto/action-automatic-releases@latest"
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          prerelease: true
+          title: "anchor"
+          automatic_release_tag: 'anchor-nightly'
+          files: |
+            ./anchor.tgz

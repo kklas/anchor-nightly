@@ -1,9 +1,6 @@
-name: Release
+name: Pinned
 
 on:
-  schedule:
-    - cron: '0 2 * * *' # run at 2 AM UTC
-
   workflow_dispatch:
 
   push:
@@ -33,28 +30,30 @@ jobs:
             ./target/
           key: cargo-${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
 
+      - run: echo "VERSION_SUFFIX=${{ env.ANCHOR_VERSION }}-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+        shell: bash
+
       # cli
       - run: make build-cli
       - run: cd cli/npm-package && yarn pack
-      - run: cp cli/npm-package/project-serum-anchor-cli-*.tgz ./anchor-cli.tgz
+      - run: cp cli/npm-package/project-serum-anchor-cli-*.tgz ./anchor-cli-${{ env.VERSION_SUFFIX }}.tgz
       - uses: "marvinpinto/action-automatic-releases@latest"
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          prerelease: true
-          title: "anchor-cli"
-          automatic_release_tag: 'anchor-cli-nightly'
+          title: "anchor-cli-${{ env.VERSION_SUFFIX }}"
+          automatic_release_tag: 'anchor-cli-latest'
           files: |
-            ./anchor-cli.tgz
+            ./anchor-cli-${{ env.VERSION_SUFFIX }}.tgz
 
       # ts
       - uses: ./.github/actions/setup-ts/
       - run: cd ts && yarn build && yarn pack
-      - run: cp ts/project-serum-anchor-*.tgz ./anchor.tgz
+      - run: cp ts/project-serum-anchor-*.tgz ./anchor-${{ env.VERSION_SUFFIX }}.tgz
       - uses: "marvinpinto/action-automatic-releases@latest"
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          prerelease: true
-          title: "anchor"
-          automatic_release_tag: 'anchor-nightly'
+          title: "anchor-${{ env.VERSION_SUFFIX }}"
+          automatic_release_tag: 'anchor-latest'
           files: |
-            ./anchor.tgz
+            ./anchor-${{ env.VERSION_SUFFIX }}.tgz
+
