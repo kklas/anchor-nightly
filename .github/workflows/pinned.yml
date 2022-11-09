@@ -47,8 +47,8 @@ jobs:
 
       # ts
       - uses: ./.github/actions/setup-ts/
-      - run: cd ts && yarn build && yarn pack
-      - run: cp ts/project-serum-anchor-*.tgz ./anchor-${{ env.VERSION_SUFFIX }}.tgz
+      - run: cd ts/packages/anchor && yarn build && yarn pack
+      - run: cp ts/packages/anchor/project-serum-anchor-*.tgz ./anchor-${{ env.VERSION_SUFFIX }}.tgz
       - uses: "marvinpinto/action-automatic-releases@latest"
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
